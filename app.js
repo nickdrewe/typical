@@ -1,4 +1,6 @@
 var Twitter = require('twitter');
+var express = require('express');
+var app = express();
 
 //twitter api keys from env
 var client = new Twitter({
@@ -27,6 +29,21 @@ client.stream('statuses/filter', {track: 'typical'}, function(stream) {
 	});
 });
 
+
+//Express server
+app.get('/', function (req, res) {
+  res.send('Typical!');
+});
+
+var port = process.env.PORT || 3000;
+var server = app.listen(port, function () {
+
+  var host = server.address().address;
+  var port = server.address().port;
+
+  console.log('Example app listening at http://%s:%s', host, port);
+
+});
 
 //once a minute
 var typical = function(){
