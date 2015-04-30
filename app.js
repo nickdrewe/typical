@@ -11,15 +11,17 @@ var client = new Twitter({
 });
 
 var currentTweet;
-var typicalLoop = false;
+var needTweet = true;
+var keyword = 'typical';
 
-client.stream('statuses/filter', {track: 'typical'}, function(stream) {
+//watch Twitter stream for tweets
+client.stream('statuses/filter', {track: keyword}, function(stream) {
 	stream.on('data', function(tweet) {
-		// console.log(tweet.text);
+		//store the most recent tweet received
 		currentTweet = tweet;
 
-		//start typical loop after first tweet received
-		if(!typicalLoop){
+		//only process the tweet if one is needed (after delay)
+		if(needTweet){
 			typical();
 		}
 	});
@@ -29,8 +31,7 @@ client.stream('statuses/filter', {track: 'typical'}, function(stream) {
 	});
 });
 
-
-//Express server
+//Express server to keep heroku alive
 app.get('/', function (req, res) {
   res.send('Typical!');
 });
@@ -45,43 +46,33 @@ var server = app.listen(port, function () {
 
 });
 
-//once a minute
+//process Tweet
 var typical = function(){
-	typicalLoop = true;
+	needTweet = false;	//Stop tweets being passed to typical function
 
 	var delayNext = randomInt(300000, 600000); //delay before next tweet
-	var delayTweet = randomInt(3000, 30000); //delay before replying (spam)
+	var delayTweet = randomInt(3000, 30000); //delay before replying (to prevent Twitter flagging reply as spam)
 	
-	var tweet = currentTweet;
-
-	// console.log(tweet.text.length + tweet.user.screen_name.length);
+	var tweet = currentTweet;	//most recent Tweet from stream
 
 	if(tweet.text.length + tweet.user.screen_name.length > 120){
 		//If the tweet is too long, try the next tweet
-		typicalLoop = false;
+		needTweet = true;
 	} else {
-		//Reply to the tweet
-
+		//Reply to the Tweet after delay
 		setTimeout(function(){
-			//tweet
 			var replyText = 'Typical. RT:@' + tweet.user.screen_name + ' "' + tweet.text + '"';
-			//console.log(replyText);
 
 			var replyTweet = {
 				status: replyText,
 				in_reply_to_status_id: tweet.id_str
 			}
 
-			// console.log(replyTweet);
-
-			//tweet
+			//tweet it
 			client.post('statuses/update', replyTweet, function(error, tweet, response){
-				// console.log(response);
 
 				console.log(replyTweet);
-				// if (!error) {
-				// 	console.log(error);
-				// }
+
 			});
 
 		}, delayTweet);
